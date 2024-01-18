@@ -64,8 +64,6 @@ struct graph
 
 typedef int graph_error_t;
 
-typedef struct graph graph_t;
-
 /**
  * \brief Initialization of graph by zero
  * 
