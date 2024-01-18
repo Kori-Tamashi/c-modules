@@ -223,6 +223,84 @@ graph_error_t graph_delete_edge(struct graph *graph, const char *start_vertex, c
     return _GRAPH_OK__;
 }
 
+graph_error_t graph_show(struct graph *graph)
+{
+    int rc = _GRAPH_OK__;
+
+    FILE *dot_file = NULL;
+
+    if (!graph)
+        rc = _GRAPH_INCORRECT_ARG__;
+    
+    if (rc == _GRAPH_OK__)
+    {
+        rc = system("mkdir .graph_tmp");
+        if (rc)
+            rc = _GRAPH_OS_ERROR__;    
+    }
+    
+    if (rc == _GRAPH_OK__)
+    {
+        dot_file = fopen(".graph_tmp/dot_file.dot", "w");
+        if (!dot_file)
+            rc = _GRAPH_MEM__;
+    }
+
+    if (rc == _GRAPH_OK__)
+    {
+        fprintf(dot_file, "digraph picture {\n");
+
+        // edges to dot
+
+        for (int i = 0; i < graph->edges_amount; i++)
+        {
+            struct edge current_edge = graph->edges[i];
+
+            fprintf(dot_file, "\"%s\" -> \"%s\" [label=  %zu];\n", current_edge.start_vertex, current_edge.end_vertex, current_edge.length);
+        }
+
+        // vertices (not in edges) to dot
+
+        for (int i = 0; i < graph->vertices_amount; i++)
+        {
+            int vertex_drawed = 0;
+
+            for (int j = 0; j < graph->vertices_amount && !vertex_drawed; j++)
+            {
+                if (graph_has_edge(graph, graph->vertices[i], graph->vertices[j]))
+                    vertex_drawed = 1;
+                else if (graph_has_edge(graph, graph->vertices[j], graph->vertices[i]))
+                    vertex_drawed = 1;
+            }
+
+            if (!vertex_drawed)
+                fprintf(dot_file, "\"%s\";\n", graph->vertices[i]);
+        }
+
+        fprintf(dot_file, "}");
+
+        fclose(dot_file);
+
+        // create image of graph
+
+        rc = system("dot -Tpng .graph_tmp/dot_file.dot -o graph.png");
+        if (rc)
+            rc = _GRAPH_OS_ERROR__;
+    }
+    
+    #if defined(__WIN32__)
+        system("mspaint graph.png");
+    #elif defined(__linux__)
+        system("eog graph.png");
+    #else
+        #error "Unsupported operating system!"
+    #endif
+
+    system("rm -f -r .graph_tmp graph.png");
+
+    return rc;
+}
+
 void graph_free(struct graph *graph)
 {
     for (int i = 0; i < graph->vertices_amount; i++)
