@@ -33,7 +33,7 @@ int graph_has_vertex(struct graph *graph, const char *vertex)
 
 int graph_has_edge(struct graph *graph, const char *start_vertex, const char *end_vertex)
 {
-    if (graph && start_vertex && end_vertex)
+    if (graph && start_vertex && strlen(start_vertex) && end_vertex && strlen(end_vertex))
     {
         if (!graph_is_empty(graph))
         {
@@ -172,6 +172,7 @@ graph_error_t graph_add_edge(struct graph *graph, const char *start_vertex, cons
         graph->edges[graph->edges_amount] = edge_to_add;
         graph->edges_amount++;
     }
+    
 
     if (!graph_has_vertex(graph, start_vertex))
         graph_add_vertex(graph, start_vertex);    
