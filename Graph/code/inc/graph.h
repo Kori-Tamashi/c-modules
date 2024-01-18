@@ -45,6 +45,11 @@
 */
 #define _GRAPH_EXIST__ -5
 
+/**
+ * \brief Operating system error
+*/
+#define _GRAPH_OS_ERROR__ -6
+
 // Structs and functions
 
 struct edge
@@ -157,6 +162,19 @@ graph_error_t graph_add_edge(struct graph *graph, const char *start_vertex, cons
  * \return `_GRAPH_OK__`, `_GRAPH_INCORRECT_ARG__`, `_GRAPH_EMPTY__`, `_GRAPH_NOT_FOUND__`
 */
 graph_error_t graph_delete_edge(struct graph *graph, const char *start_vertex, const char *end_vertex);
+
+/**
+ * Draw graph using Graphviz and show it
+ * 
+ * \param[in] graph Graph descriptor
+ * 
+ * \return `_GRAPH_OK__`, `_GRAPH_MEM__`, `_GRAPH_INCORRECT_ARGS__`, `_GRAPH_OS_ERROR__`
+ * 
+ * \note - Linux: the graph is demonstrated using `eog`
+ * \note - Windows: the graph is demonstrated using `mspaint`
+ * \note - The function creates a separate folder for temporary files and deletes it at the end of the work
+*/
+graph_error_t graph_show(struct graph *graph);
 
 /**
  * \brief Free graph
