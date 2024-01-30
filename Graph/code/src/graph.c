@@ -7,14 +7,14 @@ void graph_initialize(struct graph *graph)
     *graph = (struct graph) {0};
 }
 
-int graph_is_empty(struct graph *graph)
+int graph_is_empty(const struct graph *graph)
 {
     if (graph)
         return graph->vertices_amount == 0;
     return 1;
 }
 
-int graph_has_vertex(struct graph *graph, const char *vertex)
+int graph_has_vertex(const struct graph *graph, const char *vertex)
 {
     if (graph && vertex)
     {
@@ -31,7 +31,7 @@ int graph_has_vertex(struct graph *graph, const char *vertex)
     return 0;
 }
 
-int graph_has_edge(struct graph *graph, const char *start_vertex, const char *end_vertex)
+int graph_has_edge(const struct graph *graph, const char *start_vertex, const char *end_vertex)
 {
     if (graph && start_vertex && strlen(start_vertex) && end_vertex && strlen(end_vertex))
     {
@@ -172,7 +172,6 @@ graph_error_t graph_add_edge(struct graph *graph, const char *start_vertex, cons
         graph->edges[graph->edges_amount] = edge_to_add;
         graph->edges_amount++;
     }
-    
 
     if (!graph_has_vertex(graph, start_vertex))
         graph_add_vertex(graph, start_vertex);    
@@ -223,82 +222,223 @@ graph_error_t graph_delete_edge(struct graph *graph, const char *start_vertex, c
     return _GRAPH_OK__;
 }
 
-graph_error_t graph_show(struct graph *graph)
+graph_error_t graph_to_dot(const struct graph *graph, const char *folder, const char *filename)
 {
-    int rc = _GRAPH_OK__;
+    if (!graph || !filename || (folder && !strlen(folder)) || !strlen(filename))
+        return _GRAPH_INCORRECT_ARG__;
+
+    for (int i = 0; folder && folder[i] != '\0'; i++)
+    {
+        if (strchr(FORBIDDEN_SEPARATORS, folder[i]))
+            return _GRAPH_INCORRECT_ARG__;
+    }
+
+    for (int i = 0; filename[i] != '\0'; i++)
+    {
+        if (strchr(FORBIDDEN_SEPARATORS, filename[i]))
+            return _GRAPH_INCORRECT_ARG__;
+    }
+
+    int rc = 0;
 
     FILE *dot_file = NULL;
 
+    char buffer[_STRING__ + 1];
+
+    // creating folder
+
+    if (folder)
+    {
+        sprintf(buffer, "%s %s", "mkdir", folder);
+
+        rc = system(buffer);
+        if (rc)
+            return _GRAPH_OS_ERROR__;    
+    }
+
+    // creating file
+
+    folder ? sprintf(buffer, "%s/%s", folder, filename) : sprintf(buffer, "%s", filename);
+
+    dot_file = fopen(buffer, "w");
+    if (!dot_file)
+    {
+        if (folder)
+        {
+            sprintf(buffer, "%s %s", "rm -r -f", folder);
+            system(buffer);    
+        }
+        
+        return _GRAPH_MEM__;
+    }
+    
+    // file processing
+
+    fprintf(dot_file, "digraph picture {\n");
+
+    // edges to dot
+
+    for (int i = 0; i < graph->edges_amount; i++)
+    {
+        struct edge current_edge = graph->edges[i];
+
+        fprintf(dot_file, "\"%s\" -> \"%s\" [label=  %zu];\n", current_edge.start_vertex, current_edge.end_vertex, current_edge.length);
+    }
+
+    // vertices (not in edges) to dot
+
+    for (int i = 0; i < graph->vertices_amount; i++)
+    {
+        int vertex_drawed = 0;
+
+        for (int j = 0; j < graph->vertices_amount && !vertex_drawed; j++)
+        {
+            if (graph_has_edge(graph, graph->vertices[i], graph->vertices[j]))
+                vertex_drawed = 1;
+            else if (graph_has_edge(graph, graph->vertices[j], graph->vertices[i]))
+                vertex_drawed = 1;
+        }
+
+        if (!vertex_drawed)
+            fprintf(dot_file, "\"%s\";\n", graph->vertices[i]);
+    }
+
+    fprintf(dot_file, "}");
+
+    fclose(dot_file);
+
+    return _GRAPH_OK__;
+}
+
+graph_error_t graph_show(const struct graph *graph)
+{
+    int rc = _GRAPH_OK__;
+
     if (!graph)
         rc = _GRAPH_INCORRECT_ARG__;
-    
+
+    if (rc == _GRAPH_OK__)
+        rc = graph_to_dot(graph, ".graph_cash", "graph_dependencies.dot");
+
     if (rc == _GRAPH_OK__)
     {
-        rc = system("mkdir .graph_tmp");
+        rc = system("dot -Tpng .graph_cash/graph_dependencies.dot -o graph.png");
         if (rc)
-            rc = _GRAPH_OS_ERROR__;    
+            return _GRAPH_OS_ERROR__;    
     }
     
     if (rc == _GRAPH_OK__)
     {
-        dot_file = fopen(".graph_tmp/dot_file.dot", "w");
-        if (!dot_file)
-            rc = _GRAPH_MEM__;
+        #if defined(__WIN32__)
+            system("mspaint graph.png");
+        #elif defined(__linux__)
+            system("eog graph.png");
+        #else
+            #error "Unsupported operating system!"
+        #endif    
     }
 
-    if (rc == _GRAPH_OK__)
-    {
-        fprintf(dot_file, "digraph picture {\n");
-
-        // edges to dot
-
-        for (int i = 0; i < graph->edges_amount; i++)
-        {
-            struct edge current_edge = graph->edges[i];
-
-            fprintf(dot_file, "\"%s\" -> \"%s\" [label=  %zu];\n", current_edge.start_vertex, current_edge.end_vertex, current_edge.length);
-        }
-
-        // vertices (not in edges) to dot
-
-        for (int i = 0; i < graph->vertices_amount; i++)
-        {
-            int vertex_drawed = 0;
-
-            for (int j = 0; j < graph->vertices_amount && !vertex_drawed; j++)
-            {
-                if (graph_has_edge(graph, graph->vertices[i], graph->vertices[j]))
-                    vertex_drawed = 1;
-                else if (graph_has_edge(graph, graph->vertices[j], graph->vertices[i]))
-                    vertex_drawed = 1;
-            }
-
-            if (!vertex_drawed)
-                fprintf(dot_file, "\"%s\";\n", graph->vertices[i]);
-        }
-
-        fprintf(dot_file, "}");
-
-        fclose(dot_file);
-
-        // create image of graph
-
-        rc = system("dot -Tpng .graph_tmp/dot_file.dot -o graph.png");
-        if (rc)
-            rc = _GRAPH_OS_ERROR__;
-    }
-    
-    #if defined(__WIN32__)
-        system("mspaint graph.png");
-    #elif defined(__linux__)
-        system("eog graph.png");
-    #else
-        #error "Unsupported operating system!"
-    #endif
-
-    system("rm -f -r .graph_tmp graph.png");
+    system("rm -f -r .graph_cash graph.png");
 
     return rc;
+}
+
+size_t graph_adjacency_list_size(const struct graph *graph, const char *vertex)
+{
+    if (!graph || !vertex)
+        return 0;
+
+    size_t adjacency_list_size = 0;
+
+    for (int i = 0; i < graph->vertices_amount; i++)
+    {
+        if (graph_has_edge(graph, vertex, graph->vertices[i]))
+            adjacency_list_size++;
+    }
+
+    return adjacency_list_size;
+}
+
+graph_error_t graph_adjacency_list_fill(const struct graph *graph, const char *vertex, int *adjacency_list)
+{
+    if (!graph || !vertex || !adjacency_list)
+        return _GRAPH_INCORRECT_ARG__;
+
+    for (int i = 0, k = 0; i < graph->edges_amount; i++)
+    {
+        struct edge current_edge = graph->edges[i];
+        
+        if (!strcmp(vertex, current_edge.start_vertex))
+        {
+            int end_vertex_finded = 0;
+
+            for (int j = 0; j < graph->vertices_amount && !end_vertex_finded; j++)
+            {
+                if (!strcmp(graph->vertices[j], current_edge.end_vertex))
+                {
+                    adjacency_list[k++] = j;
+                    end_vertex_finded = 1; 
+                }
+            }
+        }
+
+        printf("\n");
+    }
+
+    return _GRAPH_OK__;
+}
+
+static inline void __graph_dfs_step(struct graph *graph, void (*vertex_processing)(char *vertex_name), int vertex_index, int *new)
+{
+    if (new[vertex_index] == 0)
+        return;
+
+    new[vertex_index] = 0;
+
+    // defining an adjacency list
+
+    size_t adjacent_vertices = graph_adjacency_list_size(graph, graph->vertices[vertex_index]);
+
+    int adjacent_vertices_indexes[adjacent_vertices];
+
+    graph_adjacency_list_fill(graph, graph->vertices[vertex_index], adjacent_vertices_indexes);
+
+    // processing current vertex
+
+    char vertex_copy[_STRING__ + 1];
+    strcpy(vertex_copy, graph->vertices[vertex_index]);
+
+    vertex_processing(graph->vertices[vertex_index]);
+
+    for (int i = 0; i < graph->edges_amount; i++)
+    {
+        if (!strcmp(vertex_copy, graph->edges[i].start_vertex))
+            strcpy(graph->edges[i].start_vertex, graph->vertices[vertex_index]);
+        
+        if (!strcmp(vertex_copy, graph->edges[i].end_vertex))
+            strcpy(graph->edges[i].end_vertex, graph->vertices[vertex_index]);
+    }
+    
+    // processing vertices from the adjacency list
+
+    for (int i = 0, index = adjacent_vertices_indexes[i]; i < adjacent_vertices; i++, index = adjacent_vertices_indexes[i])
+        __graph_dfs_step(graph, vertex_processing, index, new); 
+}
+
+void graph_dfs(struct graph *graph, void (*vertex_processing)(char *vertex_name))
+{
+    if (!graph || !vertex_processing)
+        return;
+
+    size_t vertices_amount = graph->vertices_amount;
+
+    int new[vertices_amount];
+
+    for (int i = 0; i < vertices_amount; i++)
+        new[i] = 1;
+
+    for (int i = 0; i < vertices_amount; i++)
+        __graph_dfs_step(graph, vertex_processing, i, new);
 }
 
 void graph_free(struct graph *graph)
