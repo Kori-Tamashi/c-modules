@@ -21,7 +21,7 @@
 #define _GRAPH_OK__ 0  
 
 /**
- * \brief Memory allocation error
+ * \brief Memory shortage error
 */
 #define _GRAPH_MEM__ -1
 
@@ -85,9 +85,9 @@ void graph_initialize(struct graph *graph);
  * 
  * \return `1` - `True` / `0` - `False`
  * 
- * \note If incorrect arguments are passed, the function returns `1` (`True`)
+ * \note - If incorrect arguments are passed, the function returns `1` (`True`)
 */
-int graph_is_empty(struct graph *graph);
+int graph_is_empty(const struct graph *graph);
 
 /**
  * \brief Checking for the presence of a vertex in the graph
@@ -97,9 +97,9 @@ int graph_is_empty(struct graph *graph);
  * 
  * \return `1` - `True` / `0` - `False`
  * 
- * \note If incorrect arguments are passed, the function returns `0` (`False`)
+ * \note - If incorrect arguments are passed, the function returns `0` (`False`)
 */
-int graph_has_vertex(struct graph *graph, const char *vertex);
+int graph_has_vertex(const struct graph *graph, const char *vertex);
 
 /**
  * \brief Checking for the presence of a edge in the graph
@@ -110,9 +110,9 @@ int graph_has_vertex(struct graph *graph, const char *vertex);
  * 
  * \return `1` - `True` / `0` - `False`
  * 
- * \note If incorrect arguments are passed, the function returns `0` (`False`)
+ * \note - If incorrect arguments are passed, the function returns `0` (`False`)
 */
-int graph_has_edge(struct graph *graph, const char *start_vertex, const char *end_vertex);
+int graph_has_edge(const struct graph *graph, const char *start_vertex, const char *end_vertex);
 
 /**
  * \brief Adding a vertex to a graph
@@ -164,7 +164,7 @@ graph_error_t graph_add_edge(struct graph *graph, const char *start_vertex, cons
 graph_error_t graph_delete_edge(struct graph *graph, const char *start_vertex, const char *end_vertex);
 
 /**
- * Draw graph using Graphviz and show it
+ * \brief Draw graph using Graphviz and show it
  * 
  * \param[in] graph Graph descriptor
  * 
@@ -174,7 +174,55 @@ graph_error_t graph_delete_edge(struct graph *graph, const char *start_vertex, c
  * \note - Windows: the graph is demonstrated using `mspaint`
  * \note - The function creates a separate folder for temporary files and deletes it at the end of the work
 */
-graph_error_t graph_show(struct graph *graph);
+graph_error_t graph_show(const struct graph *graph);
+
+/**
+ * \brief Creating a dot file by graph
+ * 
+ * \param[in] graph Graph descriptor
+ * \param[in] folder Folder name
+ * \param[in] filename File name
+ * 
+ * \return `_GRAPH_OK__`, `_GRAPH_INCORRECT_ARG__`,`_GRAPH_MEM__`, `_GRAPH_OS_ERROR__`
+ * 
+ * \note - The pointer to the `folder` string can take the `NULL` value. In this case, the folder will not be created
+*/
+graph_error_t graph_to_dot(const struct graph *graph, const char *folder, const char *filename);
+
+/**
+ * \brief Counting the number of adjacent vertices (the size of the adjacency list)
+ * 
+ * \param[in] graph Graph descriptor
+ * \param[in] vertex Vertex name
+ * 
+ * \return The number of adjacent vertices
+ * 
+ * \note - If the arguments is incorrect, the function returns 0
+*/
+size_t graph_adjacency_list_size(const struct graph *graph, const char *vertex);
+
+/**
+ * \brief Filling in the adjacency list
+ * 
+ * \param[in] graph Graph descriptor
+ * \param[in] vertex Vertex name
+ * \param[in] size Adjacency list size
+ * \param[in] adjacency_list Adjacency list descriptor
+ * 
+ * \return `_GRAPH_OK__`, `_GRAPH_INCORRECT_ARG__`
+ * 
+*/
+graph_error_t graph_adjacency_list_fill(const struct graph *graph, const char *vertex, int *adjacency_list);
+
+/**
+ * \brief Graph traversal using a depth-first search algorithm
+ * 
+ * \param[in] graph Graph descriptor
+ * \param[in] vertex_processing Vertex processing function
+ * 
+ * \note - If the input arguments are incorrect, the function will not work
+*/
+void graph_dfs(struct graph *graph, void (*vertex_processing)(char *vertex_name));
 
 /**
  * \brief Free graph
