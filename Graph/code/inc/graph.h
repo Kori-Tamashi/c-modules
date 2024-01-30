@@ -13,7 +13,7 @@
 /**
  * Forbidden characters for vertex name
 */
-#define FORBIDDEN_SEPARATORS "\"\'#%()><{}-/\\|:;,"
+#define _GRAPH_FORBIDDEN_SEPARATORS__ "\"\'#%()><{}-/\\|:;,"
 
 /**
  * \brief Positive return code
@@ -52,21 +52,53 @@
 
 // Structs and functions
 
+/**
+ * \brief Matrix
+ * 
+ * \param values Matrix values
+ * \param rows Amount of rows in matrix
+ * \param columns Amount of columns in matrix
+ */
+struct matrix
+{
+    int **values;
+    size_t rows;
+    size_t columns;
+};
+
+/**
+ * \brief Edge of graph
+ * 
+ * \param start_vertex Name of start vertex
+ * \param end_vertex Name of end vertex
+ * \param length Length of edge
+ */
 struct edge
 {
-    char start_vertex[_STRING__ + 1]; // name of start vertex
-    char end_vertex[_STRING__ + 1];   // name of end vertex
-    size_t length;                    // length of edge
+    char start_vertex[_STRING__ + 1]; 
+    char end_vertex[_STRING__ + 1];   
+    size_t length;                    
 };
 
+/**
+ * \brief Graph
+ * 
+ * \param vertices Dynamic array of vertices names
+ * \param vertices_amount Length of vertices array
+ * \param edges Dynamic array of edges
+ * \param edges_amount Length of edges array
+ */
 struct graph
 {
-    char **vertices;        // dynamic array of vertices names
-    size_t vertices_amount; // length of vertices array
-    struct edge *edges;     // dynamic array of edges
-    size_t edges_amount;    // length of edges array
+    char **vertices;        
+    size_t vertices_amount; 
+    struct edge *edges;     
+    size_t edges_amount;    
 };
 
+/**
+ * \brief Data type for errors that occur during the operation of functions
+ */
 typedef int graph_error_t;
 
 /**
@@ -74,7 +106,7 @@ typedef int graph_error_t;
  * 
  * \param[in] graph Graph descriptor
  * 
- * \note If the graph descriptor is NULL, the function will not cause a segmentation error
+ * \note - If the graph descriptor is NULL, the function will not cause a segmentation error
  */
 void graph_initialize(struct graph *graph);
 
@@ -207,7 +239,7 @@ size_t graph_adjacency_list_size(const struct graph *graph, const char *vertex);
  * \param[in] graph Graph descriptor
  * \param[in] vertex Vertex name
  * \param[in] size Adjacency list size
- * \param[in] adjacency_list Adjacency list descriptor
+ * \param[out] adjacency_list Adjacency list descriptor
  * 
  * \return `_GRAPH_OK__`, `_GRAPH_INCORRECT_ARG__`
  * 
@@ -223,6 +255,63 @@ graph_error_t graph_adjacency_list_fill(const struct graph *graph, const char *v
  * \note - If the input arguments are incorrect, the function will not work
 */
 void graph_dfs(struct graph *graph, void (*vertex_processing)(char *vertex_name));
+
+/**
+ * \brief Creating adjacency matrix by graph
+ * 
+ * \param[in] graph Graph descriptor
+ * 
+ * \return Adjacency matrix descriptor
+ * 
+ * \note - If errors occur, the function returns NULL
+ */
+struct matrix *graph_adjacency_matrix_create(const struct graph *graph);
+
+/**
+ * \brief Creating a dot file of adjacency matrix of graph
+ * 
+ * \param[in] graph Graph descriptor
+ * \param[in] adjacency_matrix Adjacency matrix descriptor
+ * \param[in] folder Folder name
+ * \param[in] filename File name
+ * 
+ * \return `_GRAPH_OK__`, `_GRAPH_INCORRECT_ARG__`,`_GRAPH_MEM__`, `_GRAPH_OS_ERROR__`
+ * 
+ * \note - The pointer to the `folder` string can take the `NULL` value. In this case, the folder will not be created
+*/
+graph_error_t graph_adjacency_matrix_to_dot(const struct graph *graph, const struct matrix *adjacency_matrix, const char *folder, const char *filename);
+
+/**
+ * \brief Draw graph adjacency matrix using Graphviz and show it
+ * 
+ * \param[in] graph Graph descriptor
+ * \param[in] adjacency_matrix Adjacency matrix descriptor
+ * 
+ * \return `_GRAPH_OK__`, `_GRAPH_MEM__`, `_GRAPH_INCORRECT_ARGS__`, `_GRAPH_OS_ERROR__`
+ * 
+ * \note - Linux: the graph adjacency matrix  is demonstrated using `eog`
+ * \note - Windows: the graph adjacency matrix  is demonstrated using `mspaint`
+ * \note - The function creates a separate folder for temporary files and deletes it at the end of the work
+*/
+graph_error_t graph_adjacency_matrix_show(const struct graph *graph, const struct matrix *adjacency_matrix);
+
+/**
+ * \brief Free adjacency matrix
+ * 
+ * \param[in] adjacency_matrix Adjacency matrix descriptor
+ */
+void graph_adjacency_matrix_free(struct matrix *adjacency_matrix);
+
+/**
+ * \brief Finding the shortest distance matrix using the Floyd-Warshall algorithm
+ * 
+ * \param graph Graph descriptor
+ * 
+ * \return The shortest distance matrix
+ * 
+ * \note - If errors occur, the function returns NULL
+ */
+struct matrix *graph_floyd_warshall(const struct graph *graph);
 
 /**
  * \brief Free graph
