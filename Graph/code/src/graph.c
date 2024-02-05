@@ -2,6 +2,12 @@
 #include <string.h>
 #include "graph.h"
 
+#if defined(__linux__)
+    #define INT_MAX __INT32_MAX__
+#else
+    #error "Unsupported operating system!"
+#endif 
+
 void graph_initialize(struct graph *graph)
 {   
     *graph = (struct graph) {0};
