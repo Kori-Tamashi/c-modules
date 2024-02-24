@@ -110,10 +110,7 @@ void carcass_print(FILE *file, const struct carcass *carcass)
     fprintf(file, "%s\n", __CARCASS_MARKER);
 
     for (size_t i = 0; i < carcass->vertex_amount; i++)
-        fprintf(file, "%lf %lf %lf\n", \
-                carcass->vertex_array[i].x, \
-                carcass->vertex_array[i].y, \
-                carcass->vertex_array[i].z);
+        vertex_print(file, &carcass->vertex_array[i]);
 }
 
 void carcass_move(struct carcass *carcass, double x_move, double y_move, double z_move)
